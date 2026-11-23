@@ -1,0 +1,4507 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/admin/audit-logs": {
+      "get": {
+        "description": "Eylem türü, kullanıcı ve rezervasyon filtreleri ile sayfalamalı standart zarfta sunar.",
+        "operationId": "AdminAuditController_getAuditLogs",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa numarası",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa başına kayıt adedi (azami 100)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "description": "Denetim eylemi filtresi",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USER_CREATED",
+                "USER_UPDATED",
+                "USER_DELETED",
+                "VEHICLE_CREATED",
+                "VEHICLE_UPDATED",
+                "VEHICLE_DELETED",
+                "RESERVATION_CREATED",
+                "RESERVATION_UPDATED",
+                "RESERVATION_CANCELLED",
+                "RESERVATION_NO_SHOW",
+                "VEHICLE_DAMAGED_ON_RETURN",
+                "HANDOVER_COMPLETED",
+                "RETURN_COMPLETED",
+                "USER_ACCOUNT_CLOSED",
+                "VEHICLE_EXCEPTION_ASSIGNED",
+                "PROFILE_CORRECTION_REQUESTED",
+                "PROFILE_CORRECTION_REVIEWED"
+              ]
+            }
+          },
+          {
+            "name": "performedByUserId",
+            "required": false,
+            "in": "query",
+            "description": "İşlemi yapan kullanıcı ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reservationId",
+            "required": false,
+            "in": "query",
+            "description": "İlgili rezervasyon ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sistem denetim ve işlem loglarını listeler (Yalnızca SUPER_ADMIN)",
+        "tags": [
+          "Admin / Audit Logs"
+        ]
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "operationId": "UsersController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mevcut giriş yapmış kullanıcının profil bilgilerini getirir",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/me/profile": {
+      "put": {
+        "description": "Önemli Kural: Profil bir kez oluşturulduktan sonra resmi kimlik alanları (Ad, Soyad, T.C. Kimlik No, Doğum Tarihi, Ehliyet Tarihi) değiştirilemez.",
+        "operationId": "UsersController_createProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Müşteri profili oluşturur (T.C. Kimlik No AES-256-GCM ile şifrelenir, HMAC ile hashlenir)",
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Müşteri profilini kısmi günceller (Yalnızca iletişim/e-posta güncellenebilir; resmi kimlik alanları değiştirilemez)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/me/close-account": {
+      "post": {
+        "description": "Kullanıcının aktif rezervasyonu yoksa hesabı kapatılır, giriş bilgileri ve kimlik verileri anonimleştirilir, tüm oturumları iptal edilir.",
+        "operationId": "UsersController_closeAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Müşteri Hesabını Kapatır (KVKK Uyumlu Anonimleştirme ve Oturum İptali)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/me/change-phone": {
+      "post": {
+        "description": "Yeni telefona gönderilen 6 haneli SMS kodunu doğrular ve telefon numarasını günceller.",
+        "operationId": "UsersController_changePhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePhoneDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Telefon Numarası Günceller (SMS Doğrulama Kodlu)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/me/verify-email": {
+      "post": {
+        "operationId": "UsersController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "E-posta Adresini Doğrular (Sandbox E-posta Doğrulama)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/me/profile-correction-request": {
+      "post": {
+        "description": "Güvenlik gereği kilitli olan resmi kimlik alanları (Ad, Soyad, T.C. Kimlik No, Doğum/Ehliyet Tarihi) için yönetici onayına gerekçeli düzeltme talebi iletir.",
+        "operationId": "UsersController_createProfileCorrectionRequest",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProfileCorrectionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resmi Kimlik ve Profil Düzeltme Talebi Oluşturur (Müşteri)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users": {
+      "get": {
+        "operationId": "UsersController_listUsers",
+        "parameters": [
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "CUSTOMER",
+                "STAFF",
+                "SUPER_ADMIN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Kullanıcıları listeler (SUPER_ADMIN veya canManageUsers yetkili STAFF erişebilir)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/admin/staff": {
+      "post": {
+        "description": "Personelin telefon, e-posta, parola ve modül yetkilerini tanımlar.",
+        "operationId": "AdminStaffController_createStaff",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yeni personel hesabı oluşturur (Yalnızca SUPER_ADMIN)",
+        "tags": [
+          "Admin / Staff Management"
+        ]
+      }
+    },
+    "/api/admin/staff/{id}/permissions": {
+      "patch": {
+        "operationId": "AdminStaffController_updateStaffPermissions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStaffPermissionsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Personel yetkilerini günceller (Yalnızca SUPER_ADMIN)",
+        "tags": [
+          "Admin / Staff Management"
+        ]
+      }
+    },
+    "/api/admin/staff/{id}/deactivate": {
+      "patch": {
+        "operationId": "AdminStaffController_deactivateStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Personeli pasifleştirir ve tüm aktif oturumlarını kapatır (Yalnızca SUPER_ADMIN)",
+        "tags": [
+          "Admin / Staff Management"
+        ]
+      }
+    },
+    "/api/admin/profile-corrections": {
+      "get": {
+        "description": "Bekleyen veya sonuçlanmış kimlik düzeltme taleplerini sayfalamalı standart zarfta sunar.",
+        "operationId": "AdminProfileCorrectionController_listCorrections",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa numarası",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa başına kayıt adedi (azami 100)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Durum filtresi",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Kullanıcı ID filtresi",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Müşteri profil düzeltme taleplerini listeler (Yalnızca SUPER_ADMIN)",
+        "tags": [
+          "Admin / Profile Corrections"
+        ]
+      }
+    },
+    "/api/admin/profile-corrections/{id}/review": {
+      "patch": {
+        "description": "Onaylandığında CustomerProfile tablosu atomik olarak güncellenir (HMAC ve AES şifreleme yenilenir) ve denetim kaydı oluşturulur.",
+        "operationId": "AdminProfileCorrectionController_reviewCorrection",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewProfileCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Müşteri profil düzeltme talebini inceler (Onay / Red - Yalnızca SUPER_ADMIN)",
+        "tags": [
+          "Admin / Profile Corrections"
+        ]
+      }
+    },
+    "/api/auth/send-sms": {
+      "post": {
+        "description": "Geliştirme (sandbox) modunda doğrulama kodu terminal loglarına yazdırılır.",
+        "operationId": "AuthController_sendSms",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendSmsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "SMS Doğrulama Kodu Gönderir (REGISTER, LOGIN, PASSWORD_RESET)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/verify-sms": {
+      "post": {
+        "operationId": "AuthController_verifySms",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifySmsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "SMS Kodunun doğruluğunu kontrol eder",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "description": "15 dakikalık JWT Erişim Belirteci döner ve 7 günlük HttpOnly yenileme çerezini ayarlar.",
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Müşteri Kaydı (Telefon + SMS Kodu + Parola)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "description": "15 dakikalık JWT Erişim Belirteci döner ve 7 günlük HttpOnly yenileme çerezini ayarlar.",
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Kullanıcı Girişi (Telefon + Parola)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "description": "HttpOnly çerezi okur, eski çerezi iptal edip yenisini üretir ve taze 15 dk erişim belirteci döner.",
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "jid": []
+          }
+        ],
+        "summary": "Erişim Belirtecini Yeniler (Refresh Token Rotation)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Güvenli Çıkış (Refresh Token iptal edilir ve çerez temizlenir)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "SMS Doğrulaması ile Parola Sıfırlama",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "AuthController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mevcut oturum açmış kullanıcının kimliğini doğrular",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/branches": {
+      "get": {
+        "description": "Varsayılan olarak yalnızca aktif şubeleri döner.",
+        "operationId": "BranchesController_getBranches",
+        "parameters": [
+          {
+            "name": "all",
+            "required": false,
+            "in": "query",
+            "description": "Tümünü listelemek için true",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BranchResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Şubeleri listeler (Herkese Açık)",
+        "tags": [
+          "Branches"
+        ]
+      },
+      "post": {
+        "operationId": "BranchesController_createBranch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBranchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yeni şube oluşturur (SUPER_ADMIN veya canManageBranches yetkili STAFF)",
+        "tags": [
+          "Branches"
+        ]
+      }
+    },
+    "/api/branches/{id}": {
+      "get": {
+        "operationId": "BranchesController_getBranchById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Şube detayını getirir (Herkese Açık)",
+        "tags": [
+          "Branches"
+        ]
+      },
+      "patch": {
+        "operationId": "BranchesController_updateBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBranchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Şube bilgilerini günceller (SUPER_ADMIN veya canManageBranches yetkili STAFF)",
+        "tags": [
+          "Branches"
+        ]
+      },
+      "delete": {
+        "operationId": "BranchesController_deactivateBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Şubeyi pasife alır (Fiziksel silme yasaktır, isActive: false yapılır)",
+        "tags": [
+          "Branches"
+        ]
+      }
+    },
+    "/api/vehicles": {
+      "get": {
+        "description": "Önemli Gizlilik Kuralı: Bu uç noktada şasi numarası (VIN) ve araç plakası ASLA dönülmez!",
+        "operationId": "VehiclesController_getPublicVehicles",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "segmentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bodyTypeId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fuelTypeId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transmissionId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicVehicleResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Müsait araçları listeler (Herkese Açık)",
+        "tags": [
+          "Vehicles (Public)"
+        ]
+      }
+    },
+    "/api/vehicles/catalog": {
+      "get": {
+        "operationId": "VehiclesController_getReferenceCatalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Araç referans kataloğunu getirir (Segmentler, Kasalar, Yakıtlar, Vitesler, Markalar)",
+        "tags": [
+          "Vehicles (Public)"
+        ]
+      }
+    },
+    "/api/vehicles/{id}": {
+      "get": {
+        "operationId": "VehiclesController_getPublicVehicleById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicVehicleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Araç detayını getirir (Plaka ve VIN gizlidir)",
+        "tags": [
+          "Vehicles (Public)"
+        ]
+      }
+    },
+    "/api/admin/vehicles": {
+      "get": {
+        "operationId": "AdminVehiclesController_getAdminVehicles",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "AVAILABLE",
+                "RENTED",
+                "MAINTENANCE",
+                "DAMAGED_OUT_OF_SERVICE",
+                "INACTIVE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "onlyActive",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminVehicleResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Filodaki tüm araçları detaylı listeler (Plaka, VIN ve KM dahil)",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      },
+      "post": {
+        "operationId": "AdminVehiclesController_createVehicle",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVehicleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVehicleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Filoya yeni araç ekler",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/{id}": {
+      "get": {
+        "operationId": "AdminVehiclesController_getAdminVehicleById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVehicleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Araç detayını getirir (VIN, Plaka dahil)",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminVehiclesController_updateVehicle",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVehicleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVehicleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Araç bilgilerini (KM, Şube, Aktiflik) günceller",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/{id}/state": {
+      "patch": {
+        "description": "İzinli durum geçişleri: AVAILABLE <-> MAINTENANCE, AVAILABLE -> RENTED -> AVAILABLE/DAMAGED_OUT_OF_SERVICE, MAINTENANCE -> INACTIVE vb.",
+        "operationId": "AdminVehiclesController_updateVehicleState",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVehicleStateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVehicleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Araç durumunu günceller (5 Durumlu State Machine Geçiş Kontrolü)",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/brands": {
+      "post": {
+        "operationId": "AdminVehiclesController_createBrand",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNamedEntityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yeni marka ekler",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/models": {
+      "post": {
+        "operationId": "AdminVehiclesController_createModel",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateModelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yeni model ekler",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/body-types": {
+      "post": {
+        "operationId": "AdminVehiclesController_createBodyType",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNamedEntityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yeni kasa tipi ekler",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/fuel-types": {
+      "post": {
+        "operationId": "AdminVehiclesController_createFuelType",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNamedEntityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yeni yakıt tipi ekler",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/transmissions": {
+      "post": {
+        "operationId": "AdminVehiclesController_createTransmission",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNamedEntityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yeni vites tipi ekler",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/brands/{id}/deactivate": {
+      "patch": {
+        "operationId": "AdminVehiclesController_deactivateBrand",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Markayı pasife alır (Fiziksel silme yasaktır)",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/models/{id}/deactivate": {
+      "patch": {
+        "operationId": "AdminVehiclesController_deactivateModel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modeli pasife alır (Fiziksel silme yasaktır)",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/body-types/{id}/deactivate": {
+      "patch": {
+        "operationId": "AdminVehiclesController_deactivateBodyType",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Kasa tipini pasife alır (Fiziksel silme yasaktır)",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/fuel-types/{id}/deactivate": {
+      "patch": {
+        "operationId": "AdminVehiclesController_deactivateFuelType",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yakıt tipini pasife alır (Fiziksel silme yasaktır)",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/admin/vehicles/references/transmissions/{id}/deactivate": {
+      "patch": {
+        "operationId": "AdminVehiclesController_deactivateTransmission",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Vites tipini pasife alır (Fiziksel silme yasaktır)",
+        "tags": [
+          "Admin / Vehicle Fleet Management"
+        ]
+      }
+    },
+    "/api/pricing": {
+      "get": {
+        "operationId": "PricingController_getPricingMatrix",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceMatrixResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Güncel segment ve kasa tipi fiyat matrisini listeler (Herkese Açık)",
+        "tags": [
+          "Pricing"
+        ]
+      }
+    },
+    "/api/pricing/{segmentId}/{bodyTypeId}": {
+      "put": {
+        "description": "Yalnızca SUPER_ADMIN veya canManagePricing yetkili personel erişebilir. Not: Segment asgari yaş ve ehliyet kuralları sabit iş kuralı olduğu için değiştirilemez.",
+        "operationId": "PricingController_updatePrice",
+        "parameters": [
+          {
+            "name": "segmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bodyTypeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDailyPriceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceMatrixResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Segment ve kasa tipi için günlük kiralama fiyatı tanımlar/günceller",
+        "tags": [
+          "Pricing"
+        ]
+      }
+    },
+    "/api/reservations/availability": {
+      "get": {
+        "description": "Tarih aralığı (2 saatlik hazırlık tamponu dahil) ve şube bazında grup müsaitliğini hesaplar. Gizlilik kuralı gereği sonuçta araç plakası veya VIN ASLA dönmez; yalnızca grup adı, adet ve fiyat döner.",
+        "operationId": "ReservationsController_searchAvailability",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "description": "Alış ve İade Şubesi ID",
+            "schema": {
+              "example": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "plannedPickupAt",
+            "required": true,
+            "in": "query",
+            "description": "Planlanan alış tarihi ve saati (ISO formatında)",
+            "schema": {
+              "example": "2026-12-01T10:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "plannedReturnAt",
+            "required": true,
+            "in": "query",
+            "description": "Planlanan iade tarihi ve saati (ISO formatında)",
+            "schema": {
+              "example": "2026-12-04T10:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "segmentId",
+            "required": false,
+            "in": "query",
+            "description": "Filtre: Segment ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bodyTypeId",
+            "required": false,
+            "in": "query",
+            "description": "Filtre: Kasa Tipi ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fuelTypeId",
+            "required": false,
+            "in": "query",
+            "description": "Filtre: Yakıt Tipi ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transmissionId",
+            "required": false,
+            "in": "query",
+            "description": "Filtre: Vites Tipi ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableGroupResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Misafir/Müşteri Müsaitlik Araması (Herkese Açık)",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/reservations": {
+      "post": {
+        "description": "Müşteri profil uygunluk kurallarını (Economic 21/2, Medium 23/3, Premium 25/5) ve pg_advisory_xact_lock ile atomik kapasiteyi denetler. 15 dakikalık PENDING_PAYMENT blokesi açar.",
+        "operationId": "ReservationsController_createReservation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReservationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yeni Rezervasyon Oluşturur (15 Dakika Ödeme Blokesi)",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/reservations/my": {
+      "get": {
+        "operationId": "ReservationsController_getMyReservations",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReservationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Müşterinin kendi geçmiş ve aktif rezervasyonlarını listeler",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/reservations/me": {
+      "get": {
+        "operationId": "ReservationsController_getMeReservations",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReservationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Müşterinin kendi geçmiş ve aktif rezervasyonlarını listeler (me alias)",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/reservations/{id}": {
+      "get": {
+        "operationId": "ReservationsController_getReservationById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rezervasyon detayını getirir",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/reservations/{id}/change-request": {
+      "post": {
+        "description": "Yalnızca CONFIRMED rezervasyonlar için değişiklik talep edilebilir. Yönetici onaylayana kadar eski rezervasyon geçerliliğini korur.",
+        "operationId": "ReservationsController_createChangeRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChangeRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rezervasyon Değişiklik Talebi Oluşturur (Müşteri)",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/reservations/{id}/cancel": {
+      "post": {
+        "description": "Yalnızca CONFIRMED veya PENDING_PAYMENT durumundaki rezervasyonlar iptal edilebilir. Ödenmiş bedel varsa otomatik tam tutarlı REFUND kaydı üretilir ve kapasite serbest bırakılır. Aktif kiralamalar iptal edilemez.",
+        "operationId": "ReservationsController_cancelReservation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelReservationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Müşteri Rezervasyon İptali ve Otomatik Tam İade",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/reservations/change-requests/{id}/review": {
+      "patch": {
+        "operationId": "ReservationsController_reviewChangeRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewChangeRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rezervasyon Değişiklik Talebini İnceler (SUPER_ADMIN veya canManageReservations yetkili STAFF)",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/reservations/cron/trigger-expiration": {
+      "post": {
+        "operationId": "ReservationsController_triggerExpiration",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Manuel Süresi Dolan Rezervasyon Temizliği (Test/Yönetici amaçlı)",
+        "tags": [
+          "Reservations"
+        ]
+      }
+    },
+    "/api/admin/reservations": {
+      "get": {
+        "description": "Şube, durum, müşteri ve tarih aralığı filtreleri ile sayfalamalı standart zarfta sunar.",
+        "operationId": "AdminReservationsController_getReservations",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa numarası",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa başına kayıt adedi (azami 100)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Şube ID filtresi",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "description": "Rezervasyon durumu filtresi",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING_PAYMENT",
+                "CONFIRMED",
+                "EXPIRED",
+                "PAYMENT_FAILED",
+                "CANCELLED",
+                "ACTIVE",
+                "COMPLETED",
+                "NO_SHOW"
+              ]
+            }
+          },
+          {
+            "name": "customerId",
+            "required": false,
+            "in": "query",
+            "description": "Müşteri kullanıcı ID filtresi",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "required": false,
+            "in": "query",
+            "description": "Başlangıç tarihi başlangıcı (ISO)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": false,
+            "in": "query",
+            "description": "Başlangıç tarihi bitişi (ISO)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Tüm rezervasyonları filtreli ve sayfalamalı olarak listeler (Yönetici & Personel)",
+        "tags": [
+          "Admin / Reservations"
+        ]
+      }
+    },
+    "/api/admin/reservations/change-requests": {
+      "get": {
+        "description": "PENDING, APPROVED, REJECTED durum filtreleri ile sayfalamalı standart zarfta sunar.",
+        "operationId": "AdminReservationsController_getChangeRequests",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa numarası",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa başına kayıt adedi (azami 100)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Talep durumu filtresi",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "name": "reservationId",
+            "required": false,
+            "in": "query",
+            "description": "Rezervasyon ID filtresi",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rezervasyon değişiklik taleplerini listeler (Yönetici & Personel)",
+        "tags": [
+          "Admin / Reservations"
+        ]
+      }
+    },
+    "/api/payments/charge": {
+      "post": {
+        "description": "idempotencyKey zorunludur. Aynı anahtar tekrar gönderildiğinde mükerrer tahsilat yapılmaz, ilk işlemin sonucu döner. Başarılı ödemede rezervasyon otomatik CONFIRMED durumuna geçer ve 15 dk bloke kaldırılır.",
+        "operationId": "PaymentsController_charge",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rezervasyon Ödemesini Alır (Sandbox Simülasyonu & Idempotency Korumalı)",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/payments/reconcile-late": {
+      "post": {
+        "description": "EXPIRED veya zaman aşımına uğramış rezervasyonlara geç gelen ödemelerde atomik advisory lock ile şube kapasitesini denetler. Kapasite varsa CONFIRMED yapar; kapasite dolmuşsa otomatik tam REFUND uygular.",
+        "operationId": "PaymentsController_reconcileLate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconcileLatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Geç Düşen Ödeme Uzlaştırması (Late Payment Reconciliation)",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/payments/reservation/{reservationId}": {
+      "get": {
+        "operationId": "PaymentsController_getPaymentsByReservation",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bir rezervasyona ait ödeme ve iade geçmişini listeler",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/handover/available-vehicles/{reservationId}": {
+      "get": {
+        "description": "Şubede AVAILABLE durumunda olan uygun araçları plaka ve kilometreleriyle birlikte döner.",
+        "operationId": "HandoverController_getAvailableVehicles",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminVehicleResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rezervasyona teslim edilebilecek şubedeki müsait araçları listeler",
+        "tags": [
+          "Handover & Return (Staff Operations)"
+        ]
+      }
+    },
+    "/api/handover/eligible-vehicles/{reservationId}": {
+      "get": {
+        "description": "Handover öncesi tam eşleşen veya uygun araçları sayfalamalı meta zarfı ile döner.",
+        "operationId": "HandoverController_getEligibleVehicles",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa numarası",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Sayfa başına kayıt adedi (azami 100)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rezervasyona teslim edilebilecek uygun araçları sayfalamalı standart zarfta listeler",
+        "tags": [
+          "Handover & Return (Staff Operations)"
+        ]
+      }
+    },
+    "/api/handover/deliver": {
+      "post": {
+        "description": "Kilometre ve yakıt kaydı alır. Araç grubu eşleşmiyorsa yalnızca SUPER_ADMIN onayı ve customerApproved: true bayrağı ile fiyat farksız istisnai üst segment yükseltmesi yapılabilir.",
+        "operationId": "HandoverController_deliverVehicle",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliverVehicleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoverRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Araç Teslimatı Yapar (Reservation: ACTIVE, Vehicle: RENTED)",
+        "tags": [
+          "Handover & Return (Staff Operations)"
+        ]
+      }
+    },
+    "/api/handover/return": {
+      "post": {
+        "description": "İade kilometresi >= teslimat kilometresi kontrolü yapılır. hasDamage: true ise araç otomatik olarak DAMAGED_OUT_OF_SERVICE durumuna alınır.",
+        "operationId": "HandoverController_returnVehicle",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnVehicleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReturnRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Araç İadesi Alır (Reservation: COMPLETED, Vehicle: AVAILABLE veya DAMAGED_OUT_OF_SERVICE)",
+        "tags": [
+          "Handover & Return (Staff Operations)"
+        ]
+      }
+    },
+    "/api/handover/no-show/{reservationId}": {
+      "post": {
+        "operationId": "HandoverController_markNoShow",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Teslim Alınmayan Rezervasyonu NO_SHOW İşaretler (CONFIRMED -> NO_SHOW)",
+        "tags": [
+          "Handover & Return (Staff Operations)"
+        ]
+      }
+    },
+    "/api/reports/dashboard": {
+      "get": {
+        "description": "Toplam rezervasyon sayıları (durum bazlı), filo durumu (müsait, kirada, bakımda, hasarlı) ve toplam tahsilat/iade/net gelir özetini sunar.",
+        "operationId": "ReportController_getDashboardSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yönetici özet dashboard verilerini getirir",
+        "tags": [
+          "Admin / Reports"
+        ]
+      }
+    },
+    "/api/reports/revenue": {
+      "get": {
+        "description": "Kiralama başlangıç tarihi bazında toplam tahsilat, iadeler, net gelir ve günlük döküm listesini döndürür.",
+        "operationId": "ReportController_getRevenueReport",
+        "parameters": [
+          {
+            "name": "startDate",
+            "required": false,
+            "in": "query",
+            "description": "Başlangıç tarihi (ISO formatı)",
+            "schema": {
+              "example": "2026-11-01T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": false,
+            "in": "query",
+            "description": "Bitiş tarihi (ISO formatı)",
+            "schema": {
+              "example": "2026-11-30T23:59:59Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueReportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Tarih aralıklı gelir ve finansal raporu getirir",
+        "tags": [
+          "Admin / Reports"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "description": "PostgreSQL bağlantısını test eder (SELECT 1), sunucu çalışma süresini ve zaman damgasını döner.",
+        "operationId": "HealthController_checkHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "uptimeSeconds": {
+                      "type": "number",
+                      "example": 120
+                    },
+                    "database": {
+                      "type": "string",
+                      "example": "connected"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "example": "2026-11-20T02:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sistem ve Veritabanı Sağlık Kontrolü (Herkese Açık)",
+        "tags": [
+          "Health"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "AracKiralama API",
+    "description": "AracKiralama Sistemi Backend RESTful API Sözleşmesi – NestJS + Prisma + PostgreSQL",
+    "version": "0.3.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "15 dakikalık JWT Erişim Belirteci"
+      },
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "jid",
+        "description": "7 günlük HttpOnly Refresh Token çerezi"
+      }
+    },
+    "schemas": {
+      "PaginatedResponseDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CustomerProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "birthDate": {
+            "type": "string"
+          },
+          "licenseDate": {
+            "type": "string"
+          },
+          "maskedNationalId": {
+            "type": "string",
+            "description": "Maskelenmiş T.C. Kimlik No (KVKK uyumlu)"
+          },
+          "calculatedAge": {
+            "type": "number"
+          },
+          "calculatedLicenseYears": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "firstName",
+          "lastName",
+          "birthDate",
+          "licenseDate",
+          "maskedNationalId",
+          "calculatedAge",
+          "calculatedLicenseYears",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "StaffPermissionResponseDto": {
+        "type": "object",
+        "properties": {
+          "canManageVehicles": {
+            "type": "boolean"
+          },
+          "canManageReservations": {
+            "type": "boolean"
+          },
+          "canManageUsers": {
+            "type": "boolean"
+          },
+          "canManageBranches": {
+            "type": "boolean"
+          },
+          "canManagePricing": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "canManageVehicles",
+          "canManageReservations",
+          "canManageUsers",
+          "canManageBranches",
+          "canManagePricing"
+        ]
+      },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+905551234567"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "CUSTOMER",
+              "STAFF",
+              "SUPER_ADMIN"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "customerProfile": {
+            "$ref": "#/components/schemas/CustomerProfileResponseDto"
+          },
+          "staffPermission": {
+            "$ref": "#/components/schemas/StaffPermissionResponseDto"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "phone",
+          "role",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateCustomerProfileDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "description": "Müşteri adı",
+            "example": "Ahmet"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Müşteri soyadı",
+            "example": "Yılmaz"
+          },
+          "birthDate": {
+            "type": "string",
+            "description": "Doğum tarihi (YYYY-MM-DD)",
+            "example": "1995-05-15"
+          },
+          "licenseDate": {
+            "type": "string",
+            "description": "Sürücü belgesi veriliş tarihi (YYYY-MM-DD)",
+            "example": "2016-08-20"
+          },
+          "nationalId": {
+            "type": "string",
+            "description": "11 haneli T.C. Kimlik Numarası (AES-256-GCM ile şifrelenir, HMAC ile hashlenir)",
+            "example": "12345678901"
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "birthDate",
+          "licenseDate",
+          "nationalId"
+        ]
+      },
+      "UpdateCustomerProfileDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Yeni e-posta adresi (Yalnızca iletişim bilgisi güncellenebilir; resmi kimlik alanları değiştirilemez)",
+            "example": "yeni.eposta@example.com"
+          }
+        }
+      },
+      "CloseAccountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Hesap kapatma gerekçesi",
+            "example": "Artık araç kiralama hizmeti kullanmak istemiyorum"
+          }
+        }
+      },
+      "MessageResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "İşlem başarıyla gerçekleştirildi"
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ]
+      },
+      "ChangePhoneDto": {
+        "type": "object",
+        "properties": {
+          "newPhone": {
+            "type": "string",
+            "description": "Yeni telefon numarası",
+            "example": "+905551234567"
+          },
+          "code": {
+            "type": "string",
+            "description": "Yeni telefona gönderilen 6 haneli SMS doğrulama kodu",
+            "example": "123456"
+          }
+        },
+        "required": [
+          "newPhone",
+          "code"
+        ]
+      },
+      "VerifyEmailDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Doğrulanacak e-posta adresi (varsayılan mevcut e-posta)",
+            "example": "ahmet@example.com"
+          },
+          "code": {
+            "type": "string",
+            "description": "Sandbox e-posta doğrulama kodu",
+            "example": "123456"
+          }
+        }
+      },
+      "CreateProfileCorrectionRequestDto": {
+        "type": "object",
+        "properties": {
+          "requestedFirstName": {
+            "type": "string",
+            "description": "Düzeltilecek ad",
+            "example": "Ahmet"
+          },
+          "requestedLastName": {
+            "type": "string",
+            "description": "Düzeltilecek soyad",
+            "example": "Yılmaz"
+          },
+          "requestedBirthDate": {
+            "type": "string",
+            "description": "Düzeltilecek doğum tarihi (YYYY-MM-DD)",
+            "example": "1995-05-15"
+          },
+          "requestedLicenseDate": {
+            "type": "string",
+            "description": "Düzeltilecek ehliyet veriliş tarihi (YYYY-MM-DD)",
+            "example": "2015-06-20"
+          },
+          "requestedNationalId": {
+            "type": "string",
+            "description": "Düzeltilecek 11 haneli T.C. Kimlik No",
+            "example": "12345678901"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Düzeltme talebinin gerekçesi ve açıklaması",
+            "example": "Nüfus cüzdanı yenilemesi ve ehliyet sınıfı güncellemesi nedeniyle düzeltme rica ediyorum."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "CreateStaffDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Personel telefon numarası (+905XXXXXXXXX)",
+            "example": "+905559876543"
+          },
+          "email": {
+            "type": "string",
+            "description": "Personel e-posta adresi",
+            "example": "personel.ali@earackiralama.com"
+          },
+          "password": {
+            "type": "string",
+            "description": "Personel parolası (En az 8 karakter)",
+            "example": "PersonelParola123!"
+          },
+          "canManageVehicles": {
+            "type": "boolean",
+            "default": false,
+            "description": "Araç ve filo yönetim yetkisi"
+          },
+          "canManageReservations": {
+            "type": "boolean",
+            "default": false,
+            "description": "Rezervasyon yönetim yetkisi"
+          },
+          "canManageUsers": {
+            "type": "boolean",
+            "default": false,
+            "description": "Müşteri ve kullanıcı yönetim yetkisi"
+          },
+          "canManageBranches": {
+            "type": "boolean",
+            "default": false,
+            "description": "Şube yönetim yetkisi"
+          },
+          "canManagePricing": {
+            "type": "boolean",
+            "default": false,
+            "description": "Fiyat yönetimi yetkisi"
+          }
+        },
+        "required": [
+          "phone",
+          "email",
+          "password"
+        ]
+      },
+      "UpdateStaffPermissionsDto": {
+        "type": "object",
+        "properties": {
+          "canManageVehicles": {
+            "type": "boolean",
+            "description": "Araç ve filo yönetim yetkisi"
+          },
+          "canManageReservations": {
+            "type": "boolean",
+            "description": "Rezervasyon yönetim yetkisi"
+          },
+          "canManageUsers": {
+            "type": "boolean",
+            "description": "Müşteri ve kullanıcı yönetim yetkisi"
+          },
+          "canManageBranches": {
+            "type": "boolean",
+            "description": "Şube yönetim yetkisi"
+          },
+          "canManagePricing": {
+            "type": "boolean",
+            "description": "Fiyat yönetimi yetkisi"
+          }
+        }
+      },
+      "ReviewProfileCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ],
+            "description": "Talep inceleme sonucu"
+          },
+          "reviewNote": {
+            "type": "string",
+            "description": "Yönetici inceleme notu",
+            "example": "Belgeler incelendi ve onaylandı."
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "SendSmsDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Türkiye formatında telefon numarası (+905XXXXXXXXX veya 05XXXXXXXXX)",
+            "example": "+905551234567"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "SMS gönderim amacı",
+            "enum": [
+              "REGISTER",
+              "LOGIN",
+              "PASSWORD_RESET"
+            ],
+            "example": "REGISTER"
+          }
+        },
+        "required": [
+          "phone",
+          "purpose"
+        ]
+      },
+      "VerifySmsDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Telefon numarası",
+            "example": "+905551234567"
+          },
+          "code": {
+            "type": "string",
+            "description": "6 haneli SMS doğrulama kodu",
+            "example": "123456"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "SMS gönderim amacı",
+            "enum": [
+              "REGISTER",
+              "LOGIN",
+              "PASSWORD_RESET"
+            ],
+            "example": "REGISTER"
+          }
+        },
+        "required": [
+          "phone",
+          "code",
+          "purpose"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Telefon numarası (+905XXXXXXXXX)",
+            "example": "+905551234567"
+          },
+          "email": {
+            "type": "string",
+            "description": "E-posta adresi",
+            "example": "ahmet.yilmaz@example.com"
+          },
+          "password": {
+            "type": "string",
+            "description": "Parola (En az 8 karakter, harf ve rakam içermelidir)",
+            "example": "GuvenliParola123!"
+          },
+          "smsCode": {
+            "type": "string",
+            "description": "Telefon numarasına gönderilen 6 haneli doğrulama kodu",
+            "example": "123456"
+          }
+        },
+        "required": [
+          "phone",
+          "email",
+          "password",
+          "smsCode"
+        ]
+      },
+      "AuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "15 dakika geçerli JWT Erişim Belirteci (Bearer token)"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponseDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "user"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Kayıtlı telefon numarası (+905XXXXXXXXX veya 05XXXXXXXXX)",
+            "example": "+905000000001"
+          },
+          "password": {
+            "type": "string",
+            "description": "Kullanıcı parolası",
+            "example": "Admin123!Test"
+          }
+        },
+        "required": [
+          "phone",
+          "password"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Kayıtlı telefon numarası",
+            "example": "+905551234567"
+          },
+          "smsCode": {
+            "type": "string",
+            "description": "PASSWORD_RESET amacıyla gönderilen 6 haneli SMS kodu",
+            "example": "123456"
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "Yeni parola (En az 8 karakter)",
+            "example": "YeniGucluParola123!"
+          }
+        },
+        "required": [
+          "phone",
+          "smsCode",
+          "newPassword"
+        ]
+      },
+      "BranchResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "openingTime": {
+            "type": "string",
+            "example": "08:00"
+          },
+          "closingTime": {
+            "type": "string",
+            "example": "22:00"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "address",
+          "openingTime",
+          "closingTime",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateBranchDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Şube adı",
+            "example": "İstanbul Havalimanı Şube"
+          },
+          "address": {
+            "type": "string",
+            "description": "Şube adresi",
+            "example": "İstanbul Havalimanı İç/Dış Hatlar Terminali, Arnavutköy/İstanbul"
+          },
+          "openingTime": {
+            "type": "string",
+            "description": "Açılış saati (HH:mm formatında)",
+            "example": "08:00"
+          },
+          "closingTime": {
+            "type": "string",
+            "description": "Kapanış saati (HH:mm formatında)",
+            "example": "22:00"
+          }
+        },
+        "required": [
+          "name",
+          "address",
+          "openingTime",
+          "closingTime"
+        ]
+      },
+      "UpdateBranchDto": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Şube adresi",
+            "example": "İstanbul Havalimanı Yeni Terminal Girişi"
+          },
+          "openingTime": {
+            "type": "string",
+            "description": "Açılış saati (HH:mm)",
+            "example": "07:30"
+          },
+          "closingTime": {
+            "type": "string",
+            "description": "Kapanış saati (HH:mm)",
+            "example": "23:30"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Şube aktiflik durumu",
+            "example": true
+          }
+        }
+      },
+      "PublicVehicleResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brandName": {
+            "type": "string"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "segmentName": {
+            "type": "string"
+          },
+          "bodyTypeName": {
+            "type": "string"
+          },
+          "fuelTypeName": {
+            "type": "string"
+          },
+          "transmissionTypeName": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "branchName": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RENTED",
+              "MAINTENANCE",
+              "DAMAGED_OUT_OF_SERVICE",
+              "INACTIVE"
+            ]
+          },
+          "year": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "brandName",
+          "modelName",
+          "segmentName",
+          "bodyTypeName",
+          "fuelTypeName",
+          "transmissionTypeName",
+          "branchId",
+          "branchName",
+          "state",
+          "year"
+        ]
+      },
+      "AdminVehicleResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brandName": {
+            "type": "string"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "segmentName": {
+            "type": "string"
+          },
+          "bodyTypeName": {
+            "type": "string"
+          },
+          "fuelTypeName": {
+            "type": "string"
+          },
+          "transmissionTypeName": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "branchName": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RENTED",
+              "MAINTENANCE",
+              "DAMAGED_OUT_OF_SERVICE",
+              "INACTIVE"
+            ]
+          },
+          "year": {
+            "type": "number"
+          },
+          "vin": {
+            "type": "string",
+            "description": "Şasi numarası (Sadece yetkili personel görür)"
+          },
+          "licensePlate": {
+            "type": "string",
+            "description": "Plaka (Sadece yetkili personel görür)"
+          },
+          "mileage": {
+            "type": "number"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "brandName",
+          "modelName",
+          "segmentName",
+          "bodyTypeName",
+          "fuelTypeName",
+          "transmissionTypeName",
+          "branchId",
+          "branchName",
+          "state",
+          "year",
+          "vin",
+          "licensePlate",
+          "mileage",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateVehicleDto": {
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string",
+            "description": "17 haneli araç şasi numarası (VIN)",
+            "example": "TEST00000000000099"
+          },
+          "licensePlate": {
+            "type": "string",
+            "description": "Araç plakası",
+            "example": "34 AK 999"
+          },
+          "modelId": {
+            "type": "string",
+            "description": "Model ID"
+          },
+          "segmentId": {
+            "type": "string",
+            "description": "Segment ID"
+          },
+          "bodyTypeId": {
+            "type": "string",
+            "description": "Kasa Tipi ID"
+          },
+          "fuelTypeId": {
+            "type": "string",
+            "description": "Yakıt Tipi ID"
+          },
+          "transmissionId": {
+            "type": "string",
+            "description": "Vites Tipi ID"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Bulunduğu Şube ID"
+          },
+          "year": {
+            "type": "number",
+            "description": "Model yılı",
+            "example": 2024
+          },
+          "mileage": {
+            "type": "number",
+            "description": "Güncel kilometre",
+            "default": 0,
+            "example": 12000
+          }
+        },
+        "required": [
+          "vin",
+          "licensePlate",
+          "modelId",
+          "segmentId",
+          "bodyTypeId",
+          "fuelTypeId",
+          "transmissionId",
+          "branchId",
+          "year"
+        ]
+      },
+      "UpdateVehicleDto": {
+        "type": "object",
+        "properties": {
+          "mileage": {
+            "type": "number",
+            "description": "Yeni kilometre",
+            "example": 15500
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Yeni şube ID"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Aktiflik durumu"
+          }
+        }
+      },
+      "UpdateVehicleStateDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "description": "Yeni araç durumu (State Machine kurallarına tabi)",
+            "enum": [
+              "AVAILABLE",
+              "RENTED",
+              "MAINTENANCE",
+              "DAMAGED_OUT_OF_SERVICE",
+              "INACTIVE"
+            ],
+            "example": "MAINTENANCE"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Durum değişikliği gerekçesi (Örn: Periyodik bakım, parça değişimi)",
+            "example": "15.000 km periyodik bakımı"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "CreateNamedEntityDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Referans verisi adı",
+            "example": "Sedan"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateModelDto": {
+        "type": "object",
+        "properties": {
+          "brandId": {
+            "type": "string",
+            "description": "Marka ID",
+            "example": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Model adı",
+            "example": "Corolla"
+          }
+        },
+        "required": [
+          "brandId",
+          "name"
+        ]
+      },
+      "PriceMatrixResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "segmentId": {
+            "type": "string"
+          },
+          "segmentName": {
+            "type": "string"
+          },
+          "minAge": {
+            "type": "number",
+            "description": "Referans: Asgari yaş kuralı (Değiştirilemez)",
+            "example": 21
+          },
+          "minLicenseYears": {
+            "type": "number",
+            "description": "Referans: Asgari ehliyet yılı (Değiştirilemez)",
+            "example": 2
+          },
+          "bodyTypeId": {
+            "type": "string"
+          },
+          "bodyTypeName": {
+            "type": "string"
+          },
+          "dailyPrice": {
+            "type": "number",
+            "example": 1200
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "segmentId",
+          "segmentName",
+          "minAge",
+          "minLicenseYears",
+          "bodyTypeId",
+          "bodyTypeName",
+          "dailyPrice",
+          "isActive"
+        ]
+      },
+      "UpdateDailyPriceDto": {
+        "type": "object",
+        "properties": {
+          "dailyPrice": {
+            "type": "number",
+            "description": "Yeni günlük kiralama bedeli (TRY)",
+            "example": 1250
+          }
+        },
+        "required": [
+          "dailyPrice"
+        ]
+      },
+      "AvailableGroupResponseDto": {
+        "type": "object",
+        "properties": {
+          "segmentId": {
+            "type": "string"
+          },
+          "segmentName": {
+            "type": "string"
+          },
+          "minAge": {
+            "type": "number",
+            "example": 21
+          },
+          "minLicenseYears": {
+            "type": "number",
+            "example": 2
+          },
+          "bodyTypeId": {
+            "type": "string"
+          },
+          "bodyTypeName": {
+            "type": "string"
+          },
+          "fuelTypeId": {
+            "type": "string"
+          },
+          "fuelTypeName": {
+            "type": "string"
+          },
+          "transmissionTypeId": {
+            "type": "string"
+          },
+          "transmissionTypeName": {
+            "type": "string"
+          },
+          "dailyPrice": {
+            "type": "number",
+            "description": "Günlük kiralama birim bedeli (TRY)",
+            "example": 850
+          },
+          "totalDays": {
+            "type": "number",
+            "description": "Kiralama gün sayısı (Minimum 1 gün)",
+            "example": 3
+          },
+          "totalAmount": {
+            "type": "number",
+            "description": "Toplam rezervasyon tutarı (TRY)",
+            "example": 2550
+          },
+          "availableCount": {
+            "type": "number",
+            "description": "Bu grupta seçilen tarih aralığında tam eşleşen müsait araç adedi",
+            "example": 2
+          }
+        },
+        "required": [
+          "segmentId",
+          "segmentName",
+          "minAge",
+          "minLicenseYears",
+          "bodyTypeId",
+          "bodyTypeName",
+          "fuelTypeId",
+          "fuelTypeName",
+          "transmissionTypeId",
+          "transmissionTypeName",
+          "dailyPrice",
+          "totalDays",
+          "totalAmount",
+          "availableCount"
+        ]
+      },
+      "CreateReservationDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Alış ve İade Şubesi ID"
+          },
+          "segmentId": {
+            "type": "string",
+            "description": "Segment ID"
+          },
+          "bodyTypeId": {
+            "type": "string",
+            "description": "Kasa Tipi ID"
+          },
+          "fuelTypeId": {
+            "type": "string",
+            "description": "Yakıt Tipi ID (Tam Eşleşme)"
+          },
+          "transmissionId": {
+            "type": "string",
+            "description": "Vites Tipi ID (Tam Eşleşme)"
+          },
+          "plannedPickupAt": {
+            "type": "string",
+            "description": "Planlanan alış tarihi ve saati (ISO formatında)",
+            "example": "2026-12-01T10:00:00Z"
+          },
+          "plannedReturnAt": {
+            "type": "string",
+            "description": "Planlanan iade tarihi ve saati (ISO formatında)",
+            "example": "2026-12-04T10:00:00Z"
+          }
+        },
+        "required": [
+          "branchId",
+          "segmentId",
+          "bodyTypeId",
+          "fuelTypeId",
+          "transmissionId",
+          "plannedPickupAt",
+          "plannedReturnAt"
+        ]
+      },
+      "ReservationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "branchName": {
+            "type": "string"
+          },
+          "vehicleId": {
+            "type": "object",
+            "description": "Atanan fiziksel araç ID (Teslimata kadar boştur)"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_PAYMENT",
+              "CONFIRMED",
+              "EXPIRED",
+              "PAYMENT_FAILED",
+              "CANCELLED",
+              "ACTIVE",
+              "COMPLETED",
+              "NO_SHOW"
+            ]
+          },
+          "expiresAt": {
+            "type": "object",
+            "description": "Ödeme blokesi bitiş zamanı (15 dk)"
+          },
+          "priceSnapshot": {
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "customerId",
+          "branchId",
+          "branchName",
+          "startTime",
+          "endTime",
+          "state",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateChangeRequestDto": {
+        "type": "object",
+        "properties": {
+          "requestedPickupAt": {
+            "type": "string",
+            "description": "Yeni planlanan alış tarihi ve saati"
+          },
+          "requestedReturnAt": {
+            "type": "string",
+            "description": "Yeni planlanan iade tarihi ve saati"
+          },
+          "requestedSegmentId": {
+            "type": "string",
+            "description": "Yeni talep edilen Segment ID"
+          },
+          "requestedBodyTypeId": {
+            "type": "string",
+            "description": "Yeni talep edilen Kasa Tipi ID"
+          },
+          "requestedFuelTypeId": {
+            "type": "string",
+            "description": "Yeni talep edilen Yakıt Tipi ID"
+          },
+          "requestedTransmissionTypeId": {
+            "type": "string",
+            "description": "Yeni talep edilen Vites Tipi ID"
+          }
+        }
+      },
+      "CancelReservationDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "İptal gerekçesi",
+            "example": "Seyahat planım ertelendi"
+          }
+        }
+      },
+      "ReviewChangeRequestDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ],
+            "example": "APPROVED"
+          },
+          "reviewNote": {
+            "type": "string",
+            "description": "Yönetici inceleme notu",
+            "example": "Müsaitlik doğrulandı ve onaylandı"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ProcessPaymentDto": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "string",
+            "description": "Ödemesi yapılacak rezervasyon ID",
+            "example": "uuid"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "description": "Ağ kesintilerinde mükerrer tahsilatı önleyen tekil anahtar (UUID veya sipariş kodu)",
+            "example": "idem_charge_12345678"
+          },
+          "cardHolderName": {
+            "type": "string",
+            "description": "Simülasyon: Kart Sahibi Adı",
+            "example": "Ahmet Yılmaz"
+          },
+          "cardNumber": {
+            "type": "string",
+            "description": "Simülasyon: 16 Haneli Kart No",
+            "example": "4543600000000001"
+          },
+          "expireMonth": {
+            "type": "string",
+            "description": "Simülasyon: Son Kullanma Ay (MM)",
+            "example": "12"
+          },
+          "expireYear": {
+            "type": "string",
+            "description": "Simülasyon: Son Kullanma Yıl (YY)",
+            "example": "28"
+          },
+          "cvv": {
+            "type": "string",
+            "description": "Simülasyon: CVV",
+            "example": "123"
+          },
+          "simulateFailure": {
+            "type": "boolean",
+            "description": "Sandbox Test Bayrağı: True gönderilirse başarısız ödeme (PAYMENT_FAILED) simüle edilir",
+            "default": false
+          }
+        },
+        "required": [
+          "reservationId",
+          "idempotencyKey"
+        ]
+      },
+      "PaymentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reservationId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "example": "TRY"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SUCCESS",
+              "FAILED",
+              "REFUNDED"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CHARGE",
+              "REFUND"
+            ]
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "providerRef": {
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reservationId",
+          "userId",
+          "amount",
+          "currency",
+          "status",
+          "type",
+          "idempotencyKey",
+          "createdAt"
+        ]
+      },
+      "ReconcileLatePaymentDto": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "string",
+            "description": "Geç ödeme yapılan veya uzlaştırılacak rezervasyon ID",
+            "example": "uuid"
+          },
+          "providerRef": {
+            "type": "string",
+            "description": "Ödeme sağlayıcısının işlem veya webhook referansı",
+            "example": "prov_late_12345678"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "description": "Ağ kesintilerinde mükerrer işlemi önleyen tekil anahtar",
+            "example": "idemp_late_12345678"
+          }
+        },
+        "required": [
+          "reservationId",
+          "providerRef",
+          "idempotencyKey"
+        ]
+      },
+      "DeliverVehicleDto": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "string",
+            "description": "Teslim edilecek rezervasyon ID"
+          },
+          "vehicleId": {
+            "type": "string",
+            "description": "Müşteriye fiziken teslim edilen araç ID"
+          },
+          "mileageOut": {
+            "type": "number",
+            "description": "Teslim anındaki araç kilometresi",
+            "example": 15200
+          },
+          "fuelLevelOut": {
+            "type": "number",
+            "description": "Teslim anındaki yakıt seviyesi (Yüzde 0-100)",
+            "example": 100
+          },
+          "actualPickupAt": {
+            "type": "string",
+            "description": "Fiili teslim zamanı (ISO)"
+          },
+          "isExceptionUpgrade": {
+            "type": "boolean",
+            "description": "İstisnai Eşdeğer/Üst Segment Yükseltme Bayrağı (Stok tükenmesi durumunda)",
+            "default": false
+          },
+          "customerApproved": {
+            "type": "boolean",
+            "description": "Yükseltme için müşteri onayı alındı mı?",
+            "default": false
+          },
+          "notes": {
+            "type": "string",
+            "description": "Teslimat notları"
+          }
+        },
+        "required": [
+          "reservationId",
+          "vehicleId",
+          "mileageOut",
+          "fuelLevelOut"
+        ]
+      },
+      "HandoverRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reservationId": {
+            "type": "string"
+          },
+          "vehicleId": {
+            "type": "string"
+          },
+          "mileageOut": {
+            "type": "number"
+          },
+          "fuelLevelOut": {
+            "type": "number"
+          },
+          "isExceptionUpgrade": {
+            "type": "boolean"
+          },
+          "customerApproved": {
+            "type": "boolean"
+          },
+          "actualPickupAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "notes": {
+            "type": "object"
+          },
+          "performedBy": {
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reservationId",
+          "vehicleId",
+          "mileageOut",
+          "fuelLevelOut",
+          "isExceptionUpgrade",
+          "customerApproved",
+          "actualPickupAt",
+          "createdAt"
+        ]
+      },
+      "ReturnVehicleDto": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "string",
+            "description": "İade alınan rezervasyon ID"
+          },
+          "mileageIn": {
+            "type": "number",
+            "description": "İade anındaki araç kilometresi (mileageIn >= mileageOut olmalıdır)",
+            "example": 15850
+          },
+          "fuelLevelIn": {
+            "type": "number",
+            "description": "İade anındaki yakıt seviyesi (Yüzde 0-100)",
+            "example": 90
+          },
+          "hasDamage": {
+            "type": "boolean",
+            "description": "Araçta hasar tespit edildi mi?",
+            "example": false
+          },
+          "damageNotes": {
+            "type": "string",
+            "description": "Hasar tespit edildiyse açıklama notu",
+            "example": "Ön tampon sağ köşede çizik"
+          },
+          "actualReturnAt": {
+            "type": "string",
+            "description": "Fiili iade zamanı (ISO)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Genel iade notları"
+          }
+        },
+        "required": [
+          "reservationId",
+          "mileageIn",
+          "fuelLevelIn",
+          "hasDamage"
+        ]
+      },
+      "ReturnRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reservationId": {
+            "type": "string"
+          },
+          "vehicleId": {
+            "type": "string"
+          },
+          "mileageIn": {
+            "type": "number"
+          },
+          "fuelLevelIn": {
+            "type": "number"
+          },
+          "hasDamage": {
+            "type": "boolean"
+          },
+          "damageNotes": {
+            "type": "object"
+          },
+          "isLateReturn": {
+            "type": "boolean",
+            "description": "İade planlanan süreyi aştı mı?",
+            "example": false
+          },
+          "lateMinutes": {
+            "type": "number",
+            "description": "Gecikme süresi (dakika)",
+            "example": 0
+          },
+          "actualReturnAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "notes": {
+            "type": "object"
+          },
+          "performedBy": {
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reservationId",
+          "vehicleId",
+          "mileageIn",
+          "fuelLevelIn",
+          "hasDamage",
+          "isLateReturn",
+          "lateMinutes",
+          "actualReturnAt",
+          "createdAt"
+        ]
+      },
+      "DashboardSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalReservations": {
+            "type": "number",
+            "description": "Toplam rezervasyon sayısı",
+            "example": 42
+          },
+          "reservationsByState": {
+            "type": "object",
+            "description": "Durumlarına göre rezervasyon sayıları",
+            "example": {
+              "CONFIRMED": 12,
+              "ACTIVE": 5,
+              "COMPLETED": 20,
+              "CANCELLED": 3,
+              "NO_SHOW": 2
+            }
+          },
+          "totalVehicles": {
+            "type": "number",
+            "description": "Toplam araç sayısı",
+            "example": 8
+          },
+          "vehiclesByState": {
+            "type": "object",
+            "description": "Durumlarına göre araç sayıları",
+            "example": {
+              "AVAILABLE": 5,
+              "RENTED": 2,
+              "MAINTENANCE": 1,
+              "DAMAGED_OUT_OF_SERVICE": 0,
+              "INACTIVE": 0
+            }
+          },
+          "totalCharged": {
+            "type": "number",
+            "description": "Toplam tahsil edilen kiralama bedeli (TRY)",
+            "example": 35000
+          },
+          "totalRefunded": {
+            "type": "number",
+            "description": "İptal edilen rezervasyonlara iade edilen toplam tutar (TRY)",
+            "example": 2500
+          },
+          "netRevenue": {
+            "type": "number",
+            "description": "Net gelir (Tahsilat - İadeler) (TRY)",
+            "example": 32500
+          }
+        },
+        "required": [
+          "totalReservations",
+          "reservationsByState",
+          "totalVehicles",
+          "vehiclesByState",
+          "totalCharged",
+          "totalRefunded",
+          "netRevenue"
+        ]
+      },
+      "DailyRevenueItemDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Tarih (YYYY-MM-DD)",
+            "example": "2026-11-15"
+          },
+          "reservationCount": {
+            "type": "number",
+            "description": "Kiralama başlangıcı bu gün olan rezervasyon sayısı",
+            "example": 4
+          },
+          "chargedAmount": {
+            "type": "number",
+            "description": "Bu gün başlangıçlı rezervasyonlardan tahsil edilen toplam tutar",
+            "example": 6400
+          },
+          "refundedAmount": {
+            "type": "number",
+            "description": "Bu güne ait iade tutarı",
+            "example": 0
+          },
+          "netAmount": {
+            "type": "number",
+            "description": "Net gelir",
+            "example": 6400
+          }
+        },
+        "required": [
+          "date",
+          "reservationCount",
+          "chargedAmount",
+          "refundedAmount",
+          "netAmount"
+        ]
+      },
+      "RevenueReportResponseDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "description": "Filtre başlangıç tarihi",
+            "example": "2026-11-01T00:00:00Z"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Filtre bitiş tarihi",
+            "example": "2026-11-30T23:59:59Z"
+          },
+          "totalReservations": {
+            "type": "number",
+            "description": "Filtre aralığındaki toplam rezervasyon sayısı",
+            "example": 25
+          },
+          "totalCharged": {
+            "type": "number",
+            "description": "Toplam tahsilat (TRY)",
+            "example": 35000
+          },
+          "totalRefunded": {
+            "type": "number",
+            "description": "Toplam iade (TRY)",
+            "example": 2500
+          },
+          "netRevenue": {
+            "type": "number",
+            "description": "Net gelir (TRY)",
+            "example": 32500
+          },
+          "dailyBreakdown": {
+            "description": "Günlük döküm",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyRevenueItemDto"
+            }
+          }
+        },
+        "required": [
+          "totalReservations",
+          "totalCharged",
+          "totalRefunded",
+          "netRevenue",
+          "dailyBreakdown"
+        ]
+      }
+    }
+  }
+}

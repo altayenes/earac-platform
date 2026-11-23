@@ -1,0 +1,452 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+///////////////////////////////
+// Enums
+///////////////////////////////
+enum UserRole {
+  CUSTOMER
+  STAFF
+  SUPER_ADMIN
+}
+
+enum VehicleState {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+  DAMAGED_OUT_OF_SERVICE
+  INACTIVE
+}
+
+enum ReservationState {
+  PENDING_PAYMENT
+  CONFIRMED
+  EXPIRED
+  PAYMENT_FAILED
+  CANCELLED
+  ACTIVE
+  COMPLETED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentType {
+  CHARGE
+  REFUND
+}
+
+enum AuditAction {
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  VEHICLE_CREATED
+  VEHICLE_UPDATED
+  VEHICLE_DELETED
+  RESERVATION_CREATED
+  RESERVATION_UPDATED
+  RESERVATION_CANCELLED
+  RESERVATION_NO_SHOW
+  VEHICLE_DAMAGED_ON_RETURN
+  HANDOVER_COMPLETED
+  RETURN_COMPLETED
+  USER_ACCOUNT_CLOSED
+  VEHICLE_EXCEPTION_ASSIGNED
+  PROFILE_CORRECTION_REQUESTED
+  PROFILE_CORRECTION_REVIEWED
+}
+
+///////////////////////////////
+// User & Auth
+///////////////////////////////
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  phone         String   @unique
+  passwordHash  String
+  role          UserRole @default(CUSTOMER)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  customerProfile         CustomerProfile?
+  staffPermission         StaffPermission?
+  reservations            Reservation[]
+  payments                Payment[]
+  auditLogs               AuditLog[]
+  smsVerificationCodes    SmsVerificationCode[]
+  refreshTokens           RefreshToken[]
+  statusHistoriesChanged  ReservationStatusHistory[]
+  profileCorrectionRequests ProfileCorrectionRequest[]
+}
+
+model CustomerProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  firstName           String
+  lastName            String
+  birthDate           DateTime @db.Date
+  licenseDate         DateTime @db.Date
+  nationalIdHash      String   @unique // HMAC-SHA256 of T.C. Kimlik No
+  nationalIdEncrypted String?          // AES-256-GCM encrypted T.C. Kimlik No
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model StaffPermission {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  canManageVehicles     Boolean  @default(false)
+  canManageReservations Boolean  @default(false)
+  canManageUsers        Boolean  @default(false)
+  canManageBranches     Boolean  @default(false)
+  canManagePricing      Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique // SHA-256 hash of the refresh token
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model SmsVerificationCode {
+  id          String    @id @default(uuid())
+  phone       String
+  code        String
+  purpose     String
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+
+  @@index([phone, purpose])
+  @@index([expiresAt])
+}
+
+///////////////////////////////
+// Vehicle Catalog
+///////////////////////////////
+model Brand {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  isActive Boolean @default(true)
+  models   Model[]
+}
+
+model Model {
+  id       String    @id @default(uuid())
+  name     String
+  brandId  String
+  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  isActive Boolean   @default(true)
+  vehicles Vehicle[]
+
+  @@unique([brandId, name])
+}
+
+model Segment {
+  id                    String                 @id @default(uuid())
+  name                  String                 @unique
+  minAge                Int                    // Referans: 21, 23, 25 (Sabit İş Kuralı)
+  minLicenseYears       Int                    // Referans: 2, 3, 5 (Sabit İş Kuralı)
+  isActive              Boolean                @default(true)
+  vehicles              Vehicle[]
+  segmentBodyTypePrices SegmentBodyTypePrice[]
+}
+
+model BodyType {
+  id                    String                 @id @default(uuid())
+  name                  String                 @unique
+  isActive              Boolean                @default(true)
+  vehicles              Vehicle[]
+  segmentBodyTypePrices SegmentBodyTypePrice[]
+}
+
+model FuelType {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  isActive Boolean   @default(true)
+  vehicles Vehicle[]
+}
+
+model TransmissionType {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  isActive Boolean   @default(true)
+  vehicles Vehicle[]
+}
+
+/// Segment + BodyType combination daily pricing
+model SegmentBodyTypePrice {
+  id         String   @id @default(uuid())
+  segmentId  String
+  bodyTypeId String
+  segment    Segment  @relation(fields: [segmentId], references: [id], onDelete: Restrict)
+  bodyType   BodyType @relation(fields: [bodyTypeId], references: [id], onDelete: Restrict)
+  dailyPrice Decimal  @db.Decimal(12, 2)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([segmentId, bodyTypeId])
+}
+
+///////////////////////////////
+// Vehicle & Branch
+///////////////////////////////
+model Branch {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  address     String
+  openingTime String   // "HH:mm" – validated in DTO
+  closingTime String   // "HH:mm"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vehicles     Vehicle[]
+  reservations Reservation[]
+}
+
+model Vehicle {
+  id             String       @id @default(uuid())
+  vin            String       @unique
+  licensePlate   String       @unique
+  modelId        String
+  segmentId      String
+  bodyTypeId     String
+  fuelTypeId     String
+  transmissionId String
+  branchId       String
+  state          VehicleState @default(AVAILABLE)
+  mileage        Int          @default(0)
+  year           Int
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  model        Model            @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  segment      Segment          @relation(fields: [segmentId], references: [id], onDelete: Restrict)
+  bodyType     BodyType         @relation(fields: [bodyTypeId], references: [id], onDelete: Restrict)
+  fuelType     FuelType         @relation(fields: [fuelTypeId], references: [id], onDelete: Restrict)
+  transmission TransmissionType @relation(fields: [transmissionId], references: [id], onDelete: Restrict)
+  branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  reservations    Reservation[]
+  handoverRecords HandoverRecord[]
+  returnRecords   ReturnRecord[]
+
+  @@index([branchId, state])
+  @@index([segmentId, bodyTypeId, state])
+}
+
+///////////////////////////////
+// Reservation & Operations
+///////////////////////////////
+model Reservation {
+  id         String           @id @default(uuid())
+  vehicleId  String?
+  customerId String
+  branchId   String
+  startTime  DateTime
+  endTime    DateTime
+  state      ReservationState @default(PENDING_PAYMENT)
+  expiresAt  DateTime?        // For PENDING_PAYMENT state payment timeout (15 min)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  // Relations: vehicleId onDelete: Restrict (Geçmiş rezervasyonu olan araç asla silinemez)
+  vehicle        Vehicle?                   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  customer       User                       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  branch         Branch                     @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  priceSnapshot  ReservationPriceSnapshot?
+  payments       Payment[]
+  handoverRecord HandoverRecord?
+  returnRecord   ReturnRecord?
+  changeRequests ReservationChangeRequest[]
+  statusHistory  ReservationStatusHistory[]
+  auditLogs      AuditLog[]
+
+  @@index([customerId, state])
+  @@index([branchId, startTime, endTime])
+  @@index([vehicleId, startTime, endTime])
+  @@index([state, expiresAt])
+}
+
+model ReservationStatusHistory {
+  id            String            @id @default(uuid())
+  reservationId String
+  reservation   Reservation       @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  fromStatus    ReservationState?
+  toStatus      ReservationState
+  changedById   String?
+  changedBy     User?             @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  reason        String?
+  createdAt     DateTime          @default(now())
+
+  @@index([reservationId])
+  @@index([changedById])
+}
+
+model ReservationPriceSnapshot {
+  id                   String      @id @default(uuid())
+  reservationId        String      @unique
+  reservation          Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  // Denormalized pricing & requested group specs at reservation time
+  segmentName          String
+  bodyTypeName         String
+  fuelTypeName         String?
+  transmissionTypeName String?
+  fuelTypeId           String?
+  transmissionTypeId   String?
+  dailyPrice           Decimal     @db.Decimal(12, 2)
+  totalDays            Int
+  totalAmount          Decimal     @db.Decimal(12, 2)
+  currency             String      @default("TRY")
+  createdAt            DateTime    @default(now())
+}
+
+model ReservationChangeRequest {
+  id                           String      @id @default(uuid())
+  reservationId                String
+  reservation                  Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  requestedStartTime           DateTime?
+  requestedEndTime             DateTime?
+  requestedSegmentId           String?
+  requestedBodyTypeId          String?
+  requestedFuelTypeId          String?
+  requestedTransmissionTypeId  String?
+  status                       String      @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedBy                   String?
+  reviewNote                   String?
+  createdAt                    DateTime    @default(now())
+  updatedAt                    DateTime    @updatedAt
+
+  @@index([reservationId, status])
+}
+
+///////////////////////////////
+// Payments
+///////////////////////////////
+model Payment {
+  id             String        @id @default(uuid())
+  reservationId  String?
+  userId         String
+  amount         Decimal       @db.Decimal(12, 2)
+  currency       String        @default("TRY")
+  type           PaymentType   @default(CHARGE)
+  status         PaymentStatus @default(PENDING)
+  idempotencyKey String        @unique
+  providerRef    String?       // External payment provider reference
+  createdAt      DateTime      @default(now())
+
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([reservationId])
+  @@index([userId])
+}
+
+///////////////////////////////
+// Handover & Return
+///////////////////////////////
+model HandoverRecord {
+  id                 String   @id @default(uuid())
+  reservationId      String   @unique
+  vehicleId          String
+  mileageOut         Int
+  fuelLevelOut       Int      // percentage 0-100
+  isExceptionUpgrade Boolean  @default(false)
+  customerApproved   Boolean  @default(false)
+  actualPickupAt     DateTime @default(now())
+  notes              String?
+  performedBy        String?  // Staff userId
+  createdAt          DateTime @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+}
+
+model ReturnRecord {
+  id            String   @id @default(uuid())
+  reservationId String   @unique
+  vehicleId     String
+  mileageIn     Int
+  fuelLevelIn   Int      // percentage 0-100
+  hasDamage     Boolean  @default(false)
+  damageNotes   String?
+  isLateReturn  Boolean  @default(false)
+  lateMinutes   Int      @default(0)
+  actualReturnAt DateTime @default(now())
+  notes         String?
+  performedBy   String?  // Staff userId
+  createdAt     DateTime @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+}
+
+///////////////////////////////
+// Audit
+///////////////////////////////
+model AuditLog {
+  id                String      @id @default(uuid())
+  action            AuditAction
+  performedByUserId String?
+  reservationId     String?
+  performedAt       DateTime    @default(now())
+  details           Json?
+
+  user        User?        @relation(fields: [performedByUserId], references: [id], onDelete: SetNull)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([action, performedAt])
+  @@index([performedByUserId])
+  @@index([reservationId])
+}
+
+///////////////////////////////
+// Profile Corrections
+///////////////////////////////
+model ProfileCorrectionRequest {
+  id                   String   @id @default(uuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  requestedFirstName   String?
+  requestedLastName    String?
+  requestedBirthDate   DateTime? @db.Date
+  requestedLicenseDate DateTime? @db.Date
+  requestedNationalId  String?
+  reason               String
+  status               String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedBy           String?
+  reviewNote           String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([userId, status])
+}
